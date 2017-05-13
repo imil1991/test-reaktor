@@ -7,6 +7,9 @@ namespace app;
 class Dictionary implements DictionaryInterface
 {
 
+    /**
+     * @var array
+     */
     public static $words = [
 
     ];
