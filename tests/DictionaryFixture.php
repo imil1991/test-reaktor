@@ -3,25 +3,19 @@
 
 namespace tests;
 
-use app\DictionaryInterface;
+use app\Dictionary;
 
-class DictionaryFixture implements DictionaryInterface
+class DictionaryFixture extends Dictionary
 {
 
     /**
      * @var array
      */
     public static $baseWords = [
-        ['системный', 'системный', 'system'],
+        ['системный', 'системний', 'system'],
         ['администратор', 'админ.'],
         ['системный администратор', 'сисадмин', 'systems administrator']
     ];
 
-    /**
-     * @inheritdoc
-     */
-    public function getDictionary(): array
-    {
-        return static::$baseWords;
-    }
+
 }
