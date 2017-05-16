@@ -4,32 +4,21 @@
 namespace app;
 
 
-use Ds\Vector;
-
 class Dictionary
 {
 
-    /** @var  Vector|Word[] */
-    private $words;
-
-    /** @var  Vector|Collocation[] */
-    private $collocations;
+    /** @var  Collocation[] */
+    private $collocations = [];
     /**
      * @var array
      */
     public static $baseWords = [
-
+        ['системный администратор', 'сисадмин', 'systems administrator', 'DevOps engineer'],
+        ['баз данных', 'БД', 'database'],
+        ['безопасности', 'безпеки', 'security'],
+        ['администратор баз данных', 'адміністратор БД', 'администратор БД', 'database administrator', 'dba'],
+        ['системный', 'system', 'системний'],
     ];
-
-    /**
-     * Dictionary constructor.
-     */
-    public function __construct()
-    {
-        $this->words = new Vector();
-        $this->collocations = new Vector();
-    }
-
 
     /**
      * @return array
@@ -40,54 +29,20 @@ class Dictionary
     }
 
     /**
-     * @return Collocation[]|Vector
+     * @return Collocation[]
      */
-    public function getCollocations(): Vector
+    public function getCollocations(): array
     {
         return $this->collocations;
     }
 
     /**
-     * @param Collocation[]|Vector $collocations
+     * @param Collocation[] $collocations
      * @return Dictionary
      */
     public function setCollocations($collocations): Dictionary
     {
         $this->collocations = $collocations;
-        return $this;
-    }
-
-    /**
-     * @return Word[]|Vector
-     */
-    public function getWords(): Vector
-    {
-        return $this->words;
-    }
-
-    /**
-     * @param Word[]|Vector $words
-     * @return Dictionary
-     */
-    public function setWords($words): Dictionary
-    {
-        $this->words = $words;
-        return $this;
-    }
-
-
-    /**
-     * @param Collocation $collocation
-     * @return Dictionary
-     */
-    public function removeCollection(Collocation $collocation): Dictionary
-    {
-        if (!$this->collocations->contains($collocation)) {
-            throw new \LogicException('Dictionary not constraint collocation: ' . $collocation->getExpression());
-        }
-
-        $this->collocations->remove($this->collocations->find($collocation));
-
         return $this;
     }
 
@@ -105,7 +60,8 @@ class Dictionary
                     $result->setDictionaryRowKey($rowKey);
                     $result->setDictionaryColumnKey($columnKey);
                     $result->setLength($length + 1);
-                    $this->collocations->push($result);
+                    $result->setSynonyms($this->getSynonyms($row, $columnKey));
+                    $this->collocations[] = $result;
                 }
             }
         }
@@ -114,38 +70,37 @@ class Dictionary
     }
 
     /**
-     * @param Word $word
-     * @return mixed
+     * @param array $row
+     * @param int $key
+     * @return array
      */
-    public function getSynonyms(Word $word)
+    public function getSynonyms(array $row, int $key) : array
     {
-        $result = $this->getDictionary()[$word->getDictionaryRowKey()];
-        if($word instanceof Collocation) {
-            unset($result[$word->getDictionaryColumnKey()]);
-            foreach ($result as &$one){
-                if(substr_count($one, ' ')) {
-                    $one = '"' . $one . '"';
-                }
+        unset($row[$key]);
+        foreach ($row as &$one){
+            if(substr_count($one, ' ')) {
+                $one = '"' . $one . '"';
             }
         }
 
-        return $result;
+        return $row;
     }
 
     /**
-     * @param $expression
-     * @return Word|null
+     * @param Word $word
      */
-    public function findWord($expression)
+    public function findExpression(Word $word)
     {
-        foreach ($this->words as $word){
-            if($expression == $word->getExpression()){
-                return $word;
+        foreach ($this->getDictionary() as $keyRow => $row) {
+            foreach ($row as $keyColumn => $expression) {
+                if ($expression == $word->getExpression()) {
+                    $word->setDictionaryRowKey($keyRow);
+                    $word->setDictionaryColumnKey($keyColumn);
+                    $word->setInDictionary(true);
+                    $word->setSynonyms($row);
+                }
             }
         }
-
-        return null;
     }
-
 
 }

@@ -33,18 +33,5 @@ class SearchQueryBuilderTest extends TestCase
         $this->assertCount(3, $this->searchQueryBuilder->getQueryWords());
     }
 
-    public function test_findCollocations_testQuery_returnArrayCollocation()
-    {
-        $this->assertCount(1, $this->searchQueryBuilder->findCollocations());
-    }
 
-    public function test_findCollocations_testQueryAnd1CollocationLength_returnArrayCollocation()
-    {
-        $queryBuilder = new SearchQueryBuilder(
-            new DictionaryFixture(),
-            self::TEST_QUERY,
-            1
-        );
-        $this->assertEmpty($queryBuilder->findCollocations()->count());
-    }
 }

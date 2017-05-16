@@ -4,9 +4,6 @@
 namespace app;
 
 
-use Ds\Sequence;
-use Ds\Vector;
-
 class SearchQueryBuilder
 {
     /**
@@ -21,8 +18,8 @@ class SearchQueryBuilder
      * @var int
      */
     private $collocationLength;
-    /** @var  array */
-    private $queryWords;
+    /** @var  Word[] */
+    private $printElements = [];
 
     /**
      * SearchQueryBuilder constructor.
@@ -39,7 +36,6 @@ class SearchQueryBuilder
         $this->dictionary = $dictionary;
         $this->query = $query;
         $this->collocationLength = $collocationLength;
-        $this->setQueryWords();
     }
 
     /**
@@ -48,30 +44,13 @@ class SearchQueryBuilder
     public function buildQuery(): string
     {
         $result = '';
-        $collections = $this->findCollocations();
         $this->findWords();
-        $collectionsPositions = [];
-        foreach ($collections as $collocation) {
-            $result .= '(';
-            $collocationWords = $collocation->getWords();
-            foreach ($collocationWords as $one) {
-                $word = $this->dictionary->findWord($one);
-                $result .= $word ? $this->printSynonyms($word) : $one;
-                if ($one != end($collocationWords)) {
-                    $result .= ' & ';
-                }
-            }
-            $result .= ')|';
-
-            $collectionsPositions += range($collocation->getPosition(), $collocation->getLength() - 1);
-            $result .= $this->printSynonyms($collocation);
-        }
-
-        foreach ($this->queryWords as $position => $one) {
-            if (!in_array($position, $collectionsPositions)) {
+        $this->findCollocations();
+        ksort($this->printElements);
+        foreach ($this->printElements as $element) {
+            $result .= $element->print();
+            if (end($this->printElements) !== $element) {
                 $result .= ' & ';
-                $word = $this->dictionary->findWord($one);
-                $result .= $word ? $this->printSynonyms($word) : $one;
             }
         }
 
@@ -79,69 +58,52 @@ class SearchQueryBuilder
     }
 
     /**
-     * @param Word $word
-     * @return string
-     */
-    public function printSynonyms(Word $word): string
-    {
-        return implode('|', $this->dictionary->getSynonyms($word));
-    }
-
-    /**
      * @return array
      */
     public function getQueryWords(): array
     {
-        return $this->queryWords;
-    }
-
-    /**
-     * @return SearchQueryBuilder
-     */
-    public function setQueryWords(): SearchQueryBuilder
-    {
-        $this->queryWords = array_filter(explode(' ', trim($this->query)), function ($row) {
+        return array_values(array_filter(explode(' ', trim($this->query)), function ($row) {
             return mb_strlen($row, 'utf-8') > 1;
-        });
-
-        return $this;
+        }));
     }
 
-    /**
-     * @return Sequence|Vector|Collocation[]
-     */
-    public function findCollocations(): Sequence
+    public function findCollocations()
     {
         $this->dictionary->setAllCollocations();
         $collocations = $this->dictionary->getCollocations();
         foreach ($collocations as $collocation) {
-            $position = mb_strpos($this->query, $collocation->getExpression(), 0, 'utf-8');
+            $position = mb_strpos(
+                mb_strtolower($this->query, 'utf-8'),
+                mb_strtolower($collocation->getExpression()),
+                0, 'utf-8');
             if ($collocation->getLength() <= $this->collocationLength && $position !== false) {
-                $collocation->setPosition($position);
-                $collocation->setInQuery(true);
-            }
-        }
-
-        return $this->dictionary->getCollocations()->filter(function ($collocation) {
-            /** @var Collocation $collocation */
-            return $collocation->isInQuery();
-        });
-    }
-
-    public function findWords()
-    {
-        foreach ($this->dictionary->getDictionary() as $keyRow => $row) {
-            foreach ($row as $keyColumn => $expression) {
-                if (($position = array_search($expression, $this->queryWords)) !== false) {
+                $partString = mb_substr($this->query, 0, $position, 'utf-8');
+                $printPosition = count(explode(' ', $partString)) - 1;
+                $collocation->setPosition($printPosition);
+                $collocation->setInDictionary(true);
+                $this->printElements[$printPosition] = $collocation;
+                foreach ($collocation->getExpressionParts() as $value) {
                     $word = new Word();
-                    $word->setExpression($expression);
-                    $word->setDictionaryRowKey($keyRow);
-                    $word->setDictionaryColumnKey($keyColumn);
-                    $word->setInQuery(true);
-                    $word->setPosition($position);
-                    $this->dictionary->getWords()->push($word);
+                    $word->setExpression($value);
+                    $this->dictionary->findExpression($word);
+                    $collocation->addWord($word);
+                }
+                for ($i = $printPosition + 1; $i < $printPosition + $collocation->getLength(); $i++) {
+                    unset($this->printElements[$i]);
                 }
             }
         }
     }
+
+    public function findWords()
+    {
+        foreach ($this->getQueryWords() as $position => $value) {
+            $word = new Word();
+            $word->setExpression($value);
+            $word->setPosition($position);
+            $this->dictionary->findExpression($word);
+            $this->printElements[$position] = $word;
+        }
+    }
+
 }

@@ -9,7 +9,6 @@
 namespace tests;
 
 
-use app\Collocation;
 use PHPUnit\Framework\TestCase;
 
 class DictionaryTest extends TestCase
@@ -23,15 +22,4 @@ class DictionaryTest extends TestCase
         $this->assertCount(2, $result);
     }
 
-    public function test_getSynonyms_withExpression_returnSynonymsArray()
-    {
-        $dictionary = new DictionaryFixture();
-        $result = $dictionary->getSynonyms(
-            (new Collocation())
-            ->setDictionaryRowKey(2)
-            ->setDictionaryColumnKey(0)
-        );
-        $this->assertCount(2, $result);
-
-    }
 }

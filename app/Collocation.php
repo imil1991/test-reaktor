@@ -13,6 +13,10 @@ class Collocation extends Word
 {
     /** @var  int */
     private $length = 0;
+    /**
+     * @var array
+     */
+    private $words = [];
 
     /**
      * @return int
@@ -33,11 +37,48 @@ class Collocation extends Word
     }
 
     /**
-     * @return array
+     * @return Word[]
      */
     public function getWords() : array
     {
+        return $this->words;
+    }
+
+    /**
+     * @return array
+     */
+    public function getExpressionParts() : array
+    {
         return explode(' ', $this->getExpression());
+    }
+
+    /**
+     * @param Word $word
+     * @return Word
+     */
+    public function addWord(Word $word) : Word
+    {
+        $this->words[] = $word;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function print(): string
+    {
+        $result = '(';
+        foreach ($this->getWords() as $key => $word) {
+            $result .= $word->print();
+            if($this->getLength() != $key+1) {
+                $result .= ' & ';
+            }
+        }
+
+        $result .= ')|';
+        $result .= implode('|', $this->getSynonyms());
+
+        return $result;
     }
 
 }

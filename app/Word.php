@@ -12,7 +12,7 @@ namespace app;
 class Word
 {
     /** @var bool */
-    private $inQuery = false;
+    private $inDictionary = false;
     /** @var int */
     private $position = 0;
     /** @var  string */
@@ -21,22 +21,24 @@ class Word
     private $dictionaryRowKey = 0;
     /** @var int  */
     private $dictionaryColumnKey = 0;
+    /** @var  array */
+    private $synonyms = [];
 
     /**
      * @return bool
      */
-    public function isInQuery(): bool
+    public function isInDictionary(): bool
     {
-        return $this->inQuery;
+        return $this->inDictionary;
     }
 
     /**
-     * @param bool $inQuery
+     * @param bool $inDictionary
      * @return Word
      */
-    public function setInQuery(bool $inQuery): Word
+    public function setInDictionary(bool $inDictionary): Word
     {
-        $this->inQuery = $inQuery;
+        $this->inDictionary = $inDictionary;
         return $this;
     }
 
@@ -94,15 +96,6 @@ class Word
         return $this;
     }
 
-
-    /**
-     * @return array
-     */
-    public function getWords() : array
-    {
-        return explode(' ', $this->getExpression());
-    }
-
     /**
      * @return int
      */
@@ -119,6 +112,32 @@ class Word
     {
         $this->dictionaryColumnKey = $dictionaryColumnKey;
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getSynonyms(): array
+    {
+        return $this->synonyms;
+    }
+
+    /**
+     * @param array $synonyms
+     * @return Word
+     */
+    public function setSynonyms(array $synonyms): Word
+    {
+        $this->synonyms = $synonyms;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function print(): string
+    {
+        return $this->inDictionary ? implode('|', $this->getSynonyms()) : $this->getExpression();
     }
 
 }
