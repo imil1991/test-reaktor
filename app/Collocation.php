@@ -9,18 +9,14 @@
 namespace app;
 
 
-class Collocation extends Word
+class Collocation extends Expression
 {
     /** @var  int */
     private $length = 0;
-    /**
-     * @var array
-     */
+    /** @var array */
     private $words = [];
 
-    /**
-     * @return int
-     */
+    /** @return int */
     public function getLength(): int
     {
         return $this->length;
@@ -36,35 +32,29 @@ class Collocation extends Word
         return $this;
     }
 
-    /**
-     * @return Word[]
-     */
+    /** @return Word[] */
     public function getWords() : array
     {
         return $this->words;
     }
 
-    /**
-     * @return array
-     */
+    /** @return array */
     public function getExpressionParts() : array
     {
         return explode(' ', $this->getExpression());
     }
 
     /**
-     * @param Word $word
-     * @return Word
+     * @param array $words
+     * @return Collocation
      */
-    public function addWord(Word $word) : Word
+    public function setWords(array $words) : Collocation
     {
-        $this->words[] = $word;
+        $this->words = $words;
         return $this;
     }
 
-    /**
-     * @return string
-     */
+    /** @return string */
     public function print(): string
     {
         $result = '(';

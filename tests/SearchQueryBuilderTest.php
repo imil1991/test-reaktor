@@ -30,7 +30,7 @@ class SearchQueryBuilderTest extends TestCase
 
     public function test_getWords_withTestQuery_returnArrayWordWithoutEq1Length()
     {
-        $this->assertCount(3, $this->searchQueryBuilder->getQueryWords());
+        $this->assertCount(3, $this->searchQueryBuilder->getFilteredWords());
     }
 
 

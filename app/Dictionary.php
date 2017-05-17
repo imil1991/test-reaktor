@@ -6,7 +6,6 @@ namespace app;
 
 class Dictionary
 {
-
     /** @var  Collocation[] */
     private $collocations = [];
     /**
@@ -20,12 +19,9 @@ class Dictionary
         ['системный', 'system', 'системний'],
     ];
 
-    /**
-     * @return array
-     */
-    public function getDictionary(): array
+    public function __construct()
     {
-        return static::$baseWords;
+        $this->initCollocations();
     }
 
     /**
@@ -37,30 +33,19 @@ class Dictionary
     }
 
     /**
-     * @param Collocation[] $collocations
      * @return Dictionary
      */
-    public function setCollocations($collocations): Dictionary
-    {
-        $this->collocations = $collocations;
-        return $this;
-    }
-
-
-    /**
-     * @return Dictionary
-     */
-    public function setAllCollocations(): Dictionary
+    public function initCollocations(): Dictionary
     {
         foreach (static::$baseWords as $rowKey => $row) {
-            foreach ($row as $columnKey=>$words) {
+            foreach ($row as $columnKey => $words) {
                 if ($length = mb_substr_count($words, ' ', 'utf-8')) {
                     $result = new Collocation();
                     $result->setExpression($words);
                     $result->setDictionaryRowKey($rowKey);
                     $result->setDictionaryColumnKey($columnKey);
                     $result->setLength($length + 1);
-                    $result->setSynonyms($this->getSynonyms($row, $columnKey));
+                    $result->setSynonyms($this->getCollocationSynonyms($row, $columnKey));
                     $this->collocations[] = $result;
                 }
             }
@@ -74,11 +59,11 @@ class Dictionary
      * @param int $key
      * @return array
      */
-    public function getSynonyms(array $row, int $key) : array
+    public static function getCollocationSynonyms(array $row, int $key): array
     {
         unset($row[$key]);
-        foreach ($row as &$one){
-            if(substr_count($one, ' ')) {
+        foreach ($row as &$one) {
+            if (substr_count($one, ' ')) {
                 $one = '"' . $one . '"';
             }
         }
@@ -87,20 +72,28 @@ class Dictionary
     }
 
     /**
-     * @param Word $word
+     * @param array $words
+     * @return Word[]
      */
-    public function findExpression(Word $word)
+    public static function findWords(array $words)
     {
-        foreach ($this->getDictionary() as $keyRow => $row) {
-            foreach ($row as $keyColumn => $expression) {
-                if ($expression == $word->getExpression()) {
-                    $word->setDictionaryRowKey($keyRow);
-                    $word->setDictionaryColumnKey($keyColumn);
-                    $word->setInDictionary(true);
-                    $word->setSynonyms($row);
+        $result = [];
+        foreach ($words as $value) {
+            $word = new Word();
+            $word->setExpression($value);
+            foreach (static::$baseWords as $keyRow => $row) {
+                foreach ($row as $keyColumn => $expression) {
+                    if ($expression == $word->getExpression()) {
+                        $word->setDictionaryRowKey($keyRow);
+                        $word->setDictionaryColumnKey($keyColumn);
+                        $word->setSynonyms($row);
+                    }
                 }
             }
+            $result[] = $word;
         }
+
+        return $result;
     }
 
 }

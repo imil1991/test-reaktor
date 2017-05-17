@@ -17,7 +17,7 @@ class SearchQueryBuilder
     /**
      * @var int
      */
-    private $collocationLength;
+    private $maxLength;
     /** @var  Word[] */
     private $printElements = [];
 
@@ -35,7 +35,7 @@ class SearchQueryBuilder
     {
         $this->dictionary = $dictionary;
         $this->query = $query;
-        $this->collocationLength = $collocationLength;
+        $this->maxLength = $collocationLength;
     }
 
     /**
@@ -44,8 +44,8 @@ class SearchQueryBuilder
     public function buildQuery(): string
     {
         $result = '';
-        $this->findWords();
-        $this->findCollocations();
+        $this->printElements = $this->dictionary->findWords($this->getFilteredWords());
+        $this->replaceByCollocations();
         ksort($this->printElements);
         foreach ($this->printElements as $element) {
             $result .= $element->print();
@@ -60,49 +60,56 @@ class SearchQueryBuilder
     /**
      * @return array
      */
-    public function getQueryWords(): array
+    public function getFilteredWords(): array
     {
         return array_values(array_filter(explode(' ', trim($this->query)), function ($row) {
             return mb_strlen($row, 'utf-8') > 1;
         }));
     }
 
-    public function findCollocations()
+    private function replaceByCollocations()
     {
-        $this->dictionary->setAllCollocations();
-        $collocations = $this->dictionary->getCollocations();
-        foreach ($collocations as $collocation) {
-            $position = mb_strpos(
-                mb_strtolower($this->query, 'utf-8'),
-                mb_strtolower($collocation->getExpression()),
-                0, 'utf-8');
-            if ($collocation->getLength() <= $this->collocationLength && $position !== false) {
-                $partString = mb_substr($this->query, 0, $position, 'utf-8');
-                $printPosition = count(explode(' ', $partString)) - 1;
-                $collocation->setPosition($printPosition);
-                $collocation->setInDictionary(true);
-                $this->printElements[$printPosition] = $collocation;
-                foreach ($collocation->getExpressionParts() as $value) {
-                    $word = new Word();
-                    $word->setExpression($value);
-                    $this->dictionary->findExpression($word);
-                    $collocation->addWord($word);
-                }
-                for ($i = $printPosition + 1; $i < $printPosition + $collocation->getLength(); $i++) {
-                    unset($this->printElements[$i]);
-                }
+        foreach ($this->dictionary->getCollocations() as $collocation) {
+            if($collocation->getLength() > $this->maxLength){
+                continue;
+            }
+
+            if ($position = $this->getPositionInQuery($collocation->getExpression())) {
+                $collocation->setWords(
+                    $this->dictionary->findWords($collocation->getExpressionParts())
+                );
+                $this->replacePosition($collocation, $position - 1);
             }
         }
     }
 
-    public function findWords()
+
+    /**
+     * @param string $expression
+     * @return int|false
+     */
+    public function getPositionInQuery($expression)
     {
-        foreach ($this->getQueryWords() as $position => $value) {
-            $word = new Word();
-            $word->setExpression($value);
-            $word->setPosition($position);
-            $this->dictionary->findExpression($word);
-            $this->printElements[$position] = $word;
+        $position = mb_strpos(
+            mb_strtolower($this->query, 'utf-8'),
+            mb_strtolower($expression),
+            0, 'utf-8');
+        if($position === false){
+            return false;
+        }
+
+        return count(explode(' ', trim(mb_substr($this->query, 0, $position, 'utf-8'))));
+    }
+
+    /**
+     * @param $collocation
+     * @param $position
+     */
+    private function replacePosition(Collocation $collocation, $position): void
+    {
+        $this->printElements[$position] = $collocation;
+        for ($i = $position + 1; $i < $position + $collocation->getLength(); $i++) {
+            unset($this->printElements[$i]);
         }
     }
 
