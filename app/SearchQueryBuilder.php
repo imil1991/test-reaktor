@@ -98,7 +98,7 @@ class SearchQueryBuilder
             return false;
         }
 
-        return count(explode(' ', trim(mb_substr($this->query, 0, $position + $collocation->getLength(), 'utf-8'))));
+        return count(explode(' ', mb_substr($this->query, 0, $position, 'utf-8')));
     }
 
     /**
