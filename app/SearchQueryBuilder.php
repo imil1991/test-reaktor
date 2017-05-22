@@ -74,7 +74,7 @@ class SearchQueryBuilder
                 continue;
             }
 
-            if ($position = $this->getPositionInQuery($collocation->getExpression())) {
+            if ($position = $this->getPositionInQuery($collocation)) {
                 $collocation->setWords(
                     $this->dictionary->findWords($collocation->getExpressionParts())
                 );
@@ -85,20 +85,20 @@ class SearchQueryBuilder
 
 
     /**
-     * @param string $expression
+     * @param string $collocation
      * @return int|false
      */
-    public function getPositionInQuery($expression)
+    public function getPositionInQuery(Collocation $collocation)
     {
         $position = mb_strpos(
             mb_strtolower($this->query, 'utf-8'),
-            mb_strtolower($expression),
+            mb_strtolower($collocation->getExpression()),
             0, 'utf-8');
         if($position === false){
             return false;
         }
 
-        return count(explode(' ', trim(mb_substr($this->query, 0, $position, 'utf-8'))));
+        return count(explode(' ', trim(mb_substr($this->query, 0, $position + $collocation->getLength(), 'utf-8'))));
     }
 
     /**
