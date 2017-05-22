@@ -85,8 +85,8 @@ class SearchQueryBuilder
 
 
     /**
-     * @param string $collocation
-     * @return int|false
+     * @param Collocation $collocation
+     * @return false|int
      */
     public function getPositionInQuery(Collocation $collocation)
     {
